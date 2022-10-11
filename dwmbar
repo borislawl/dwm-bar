@@ -60,6 +60,30 @@ cpu(){
 	echo -e "^c$cyan^ $cpu%^d^" 
 }
 
+PREFIX_PLAY=''
+PREFIX_PAUSE=''
+
+# Mpd Music :
+mpd()
+{
+	current_song="$(mpc current)"
+
+	if [[ "$current_song" = "" ]]; then
+		echo " "
+		exit 0
+	else
+		playpause=$(mpc | awk '/\[.*]/{split($0, a, " "); print a[1]}')
+		if [[ "$playpause" = "[playing]" ]]; then
+			current_song="$PREFIX_PLAY $current_song"
+		elif [[ "$playpause" = "[paused]" ]]; then
+			current_song="$PREFIX_PAUSE $current_song"
+		fi
+	fi
+
+
+	echo -e "^c$magenta^$current_song^d^" 
+}
+
 # Keybord Layout :
 key(){
 	kb="$(xkb-switch)" || exit 1
@@ -135,29 +159,29 @@ nettrf(){
 	rx=$(update /sys/class/net/[ew]*/statistics/rx_bytes)
 	tx=$(update /sys/class/net/[ew]*/statistics/tx_bytes)
 
-	printf "^c$green^ %1sB  %1sB^d^\\n" $(numfmt --to=iec $rx) $(numfmt --to=iec $tx)	
+	printf "^c$green^ %1sB  %1sB^d^\\n" $(numfmt --to=si $rx) $(numfmt --to=si $tx)	
 }
 
 # Updates
 pkg_updates() {
       	updates=$(xbps-install -un | wc -l) # void
 	#updates=$(pacman -Qu | grep -Fcv "[ignored]" | sed "s/^//;s/^0$//g")   # arch , needs pacman contrib
-	# updates=$(aptitude search '~U' | wc -l)  # apt (ubuntu,debian etc)
+	#updates=$(aptitude search '~U' | wc -l)  # apt (ubuntu,debian etc)
 
 	if [ "$updates" == "0" ]; then
-		printf "^c$cyan^ Fully Updated^d^"
+		printf "^c$cyan^ 0^d^"
 	else
-		printf "^c$cyan^ $updates"" updates^d^"
+		printf "^c$cyan^ $updates""^d^"
 	fi
 }
 while true; do
  [ $interval = 0 ] || [ $(($interval % 3600)) = 0 ] && updates=$(pkg_updates)
   interval=$((interval + 1))
   space=" "
-  range="^c$red^|"
+  range="^c$red^│"
   
 #  xsetroot -name "$range$space$updates$space$(nettrf)$space$(tmp)$space$(cpu)$space$(mem)$space$(vol)$space$(lit)$space$(bat)$space$(key)$space$(dat)$space$(net)$range"
 #  xsetroot -name "$range$space$updates$space$(nettrf)$space$(tmp)$space$(cpu)$space$(mem)$space$(vol)$space$(lit)$space$(bat)$space$(dat)$space$(net)$range"
-  xsetroot -name "$range$space$(nettrf)$space$(tmp)$space$(cpu)$space$(mem)$space$updates$space$(net)$space$(bat)$space$(dat)$range"
+xsetroot -name "$space$(mpd)$space$(nettrf)$space$(tmp)$space$(cpu)$space$(mem)$space$updates$space$(net)$space$(bat)$space$(vol)$space$(lit)$space$(dat)$space"
   sleep 0.2
 done &
